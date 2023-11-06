@@ -1,0 +1,61 @@
+'''
+from pyspark.sql import SparkSession
+import os
+
+# Créez une session Spark
+spark = SparkSession.builder.appName("AnalyseAccidents").getOrCreate()
+
+# Répertoire où se trouvent les fichiers CSV
+repertoire = "/chemin/vers/votre/repertoire"
+
+# Liste des fichiers CSV dans le répertoire
+fichiers = [fichier for fichier in os.listdir(repertoire) if fichier.endswith(".csv")]
+
+# Boucle pour charger chaque fichier
+for fichier in fichiers:
+    chemin_fichier = os.path.join(repertoire, fichier)
+    df = spark.read.csv(chemin_fichier, header=True, inferSchema=True)
+    # Effectuez des opérations d'analyse ou de traitement sur le DataFrame "df" ici.
+
+# Fermez la session Spark à la fin du traitement
+spark.stop()'''
+
+
+
+from pyspark.sql import SparkSession
+import os
+
+# Créez une session Spark
+spark = SparkSession.builder.appName("AnalyseAccidents").getOrCreate()
+
+# Répertoire où se trouvent les fichiers CSV
+repertoire = "/chemin/vers/votre/repertoire"
+
+# Liste des fichiers CSV dans le répertoire
+fichiers = [fichier for fichier in os.listdir(repertoire) if fichier.endswith(".csv")]
+
+# Boucle pour charger chaque fichier
+for fichier in fichiers:
+    chemin_fichier = os.path.join(repertoire, fichier)
+    df = spark.read.csv(chemin_fichier, header=True, inferSchema=True)
+    
+    # Opération d'analyse 1 : Calcul du nombre total d'accidents
+    nombre_total_accidents = df.count()
+    print(f"Nombre total d'accidents dans le fichier {fichier}: {nombre_total_accidents}")
+    
+    # Opération d'analyse 2 : Identification des départements avec le plus grand nombre d'accidents
+    departements_plus_accidents = df.groupBy("dep").count().orderBy("count", ascending=False).limit(10)
+    print(f"Départements avec le plus grand nombre d'accidents dans le fichier {fichier}:")
+    departements_plus_accidents.show()
+    
+    # Opération d'analyse 3 : Analyse des conditions d'éclairage
+    conditions_eclairage = df.groupBy("lum").count()
+    print(f"Analyse des conditions d'éclairage dans le fichier {fichier}:")
+    conditions_eclairage.show()
+
+# Fermez la session Spark à la fin du traitement
+spark.stop()
+
+
+# Fermez la session Spark à la fin du traitement
+spark.stop()
