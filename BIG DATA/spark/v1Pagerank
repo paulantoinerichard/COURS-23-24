@@ -1,0 +1,57 @@
+pip install mrjob
+from mrjob.job import MRJob
+from mrjob.step import MRStep
+
+class PageRankMRJob(MRJob):
+    
+    def configure_args(self):
+        super(PageRankMRJob, self).configure_args()
+        self.add_passthru_arg('--iterations', default=10, type=int)
+        self.add_passthru_arg('--damping-factor', default=0.15, type=float)
+
+    def mapper_init(self):
+        # Load the damping factor and initialize the PageRank values for each node
+        self.damping_factor = self.options.damping_factor
+        self.node_count = 0
+        self.node_pagerank = {}
+        self.node_adjacency_list = {}
+        
+    def mapper(self, _, line):
+        source, target = line.strip().split()
+        source, target = int(source), int(target)
+        
+        if source not in self.node_adjacency_list:
+            self.node_adjacency_list[source] = []
+        self.node_adjacency_list[source].append(target)
+
+        if target not in self.node_pagerank:
+            self.node_pagerank[target] = 1.0
+
+    def mapper_final(self):
+        for node, adjacency_list in self.node_adjacency_list.items():
+            for target in adjacency_list:
+                yield node, (target, self.node_pagerank[node] / len(adjacency_list))
+        for node in self.node_pagerank:
+            yield node, self.node_pagerank[node]
+
+    def reducer(self, node, values):
+        new_pagerank = 0
+        for value in values:
+            if isinstance(value, float):
+                new_pagerank += value
+            else:
+                target, pagerank_contribution = value
+                new_pagerank += pagerank_contribution
+        yield node, new_pagerank
+
+    def steps(self):
+        return [
+            MRStep(mapper_init=self.mapper_init, mapper=self.mapper, mapper_final=self.mapper_final),
+            MRStep(reducer=self.reducer)
+        ]
+
+if __name__ == '__main__':
+    PageRankMRJob.run()
+
+
+#python pagerank_mrjob.py --iterations 10 --damping-factor 0.15 soc-Epinions1.txt
